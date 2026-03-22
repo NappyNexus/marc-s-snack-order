@@ -1,16 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from "react";
+import { getMenu } from "@/lib/menu-data";
+import type { MenuItem } from "@/lib/menu-data";
+import { Header } from "@/components/Header";
+import { Hero } from "@/components/Hero";
+import { MenuSection } from "@/components/MenuSection";
+import { BankInfoSection } from "@/components/BankInfoSection";
+import { CartDrawer } from "@/components/CartDrawer";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  useEffect(() => {
+    setMenu(getMenu());
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      <Header onCartClick={() => setCartOpen(true)} />
+      <Hero />
+      <MenuSection menu={menu} />
+      <BankInfoSection />
+      <footer className="py-8 text-center text-sm text-muted-foreground border-t">
+        <p className="font-display font-semibold">Marc's Snackks © {new Date().getFullYear()}</p>
+        <p className="mt-1">Pastelitos dominicanos y más 🇩🇴</p>
+      </footer>
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
