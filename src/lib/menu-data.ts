@@ -1,8 +1,15 @@
+import pastelitoBasico from "@/assets/pastelito-basico.jpg";
+import pastelitoCasa from "@/assets/pastelito-casa.jpg";
+import pastelitoEspecial from "@/assets/pastelito-especial.jpg";
+import croquetasImg from "@/assets/croquetas.jpg";
+import quipeImg from "@/assets/quipe.jpg";
+
 export interface MenuItem {
   id: string;
   name: string;
   price: number;
   category: string;
+  image?: string;
 }
 
 export interface CartItem extends MenuItem {
@@ -11,29 +18,29 @@ export interface CartItem extends MenuItem {
 
 export const DEFAULT_MENU: MenuItem[] = [
   // Pastelitos Básicos
-  { id: "pb-1", name: "Pastelito de Pollo", price: 60, category: "Pastelitos Básicos" },
-  { id: "pb-2", name: "Pastelito de Res", price: 60, category: "Pastelitos Básicos" },
-  { id: "pb-3", name: "Pastelito de Queso Amarillo", price: 60, category: "Pastelitos Básicos" },
-  { id: "pb-4", name: "Pastelito de Queso Crema", price: 60, category: "Pastelitos Básicos" },
+  { id: "pb-1", name: "Pastelito de Pollo", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
+  { id: "pb-2", name: "Pastelito de Res", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
+  { id: "pb-3", name: "Pastelito de Queso Amarillo", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
+  { id: "pb-4", name: "Pastelito de Queso Crema", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
 
   // Pastelitos de la Casa
-  { id: "pc-1", name: "Pastelito Parrillero", price: 60, category: "Pastelitos de la Casa" },
-  { id: "pc-2", name: "Pastelito 4 Quesos", price: 60, category: "Pastelitos de la Casa" },
-  { id: "pc-3", name: "Pastelito Pollo, Queso y Maíz", price: 60, category: "Pastelitos de la Casa" },
-  { id: "pc-4", name: "Pastelito Queso y Salsa Pizza", price: 60, category: "Pastelitos de la Casa" },
+  { id: "pc-1", name: "Pastelito Parrillero", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
+  { id: "pc-2", name: "Pastelito 4 Quesos", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
+  { id: "pc-3", name: "Pastelito Pollo, Queso y Maíz", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
+  { id: "pc-4", name: "Pastelito Queso y Salsa Pizza", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
 
   // Pastelitos Especiales
-  { id: "pe-1", name: "Pastelito Pechuga Horneada", price: 65, category: "Pastelitos Especiales" },
-  { id: "pe-2", name: "Pastelito Croque", price: 65, category: "Pastelitos Especiales" },
+  { id: "pe-1", name: "Pastelito Pechuga Horneada", price: 65, category: "Pastelitos Especiales", image: pastelitoEspecial },
+  { id: "pe-2", name: "Pastelito Croque", price: 65, category: "Pastelitos Especiales", image: pastelitoEspecial },
 
   // Pastelitos Super Especiales
-  { id: "ps-1", name: "Pastelito Pollo Italiano", price: 70, category: "Pastelitos Super Especiales" },
-  { id: "ps-2", name: "Pastelito El Dorado", price: 70, category: "Pastelitos Super Especiales" },
+  { id: "ps-1", name: "Pastelito Pollo Italiano", price: 70, category: "Pastelitos Super Especiales", image: pastelitoEspecial },
+  { id: "ps-2", name: "Pastelito El Dorado", price: 70, category: "Pastelitos Super Especiales", image: pastelitoEspecial },
 
   // Otros
-  { id: "o-1", name: "Croquetas", price: 60, category: "Otros Snacks" },
-  { id: "o-2", name: "Quipe de Res", price: 70, category: "Otros Snacks" },
-  { id: "o-3", name: "Quipe de Pollo", price: 70, category: "Otros Snacks" },
+  { id: "o-1", name: "Croquetas", price: 60, category: "Otros Snacks", image: croquetasImg },
+  { id: "o-2", name: "Quipe de Res", price: 70, category: "Otros Snacks", image: quipeImg },
+  { id: "o-3", name: "Quipe de Pollo", price: 70, category: "Otros Snacks", image: quipeImg },
 ];
 
 const MENU_STORAGE_KEY = "marcs-snackks-menu";
