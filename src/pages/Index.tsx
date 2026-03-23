@@ -12,7 +12,10 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
-    setMenu(getMenu());
+    const load = () => setMenu(getMenu());
+    load();
+    window.addEventListener("stock-updated", load);
+    return () => window.removeEventListener("stock-updated", load);
   }, []);
 
   return (

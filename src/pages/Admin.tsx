@@ -88,7 +88,7 @@ export default function AdminPage() {
     setMenu([...menu, newItem]);
   };
 
-  const updateItem = (id: string, field: keyof MenuItem, value: string | number) => {
+  const updateItem = (id: string, field: keyof MenuItem, value: string | number | undefined) => {
     setMenu(menu.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
@@ -225,6 +225,17 @@ export default function AdminPage() {
                             value={item.price}
                             onChange={(e) => updateItem(item.id, "price", Number(e.target.value))}
                             className="w-16 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Stock</span>
+                          <input
+                            type="number"
+                            value={item.stock ?? ""}
+                            onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
+                            placeholder="∞"
+                            className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
+                            min={0}
                           />
                         </div>
                         <select

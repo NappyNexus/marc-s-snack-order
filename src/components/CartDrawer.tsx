@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Minus, Plus, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
-import { buildWhatsAppUrl, getWhatsAppNumber } from "@/lib/menu-data";
+import { buildWhatsAppUrl, getWhatsAppNumber, decrementStock } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -17,10 +17,14 @@ export function CartDrawer({ open, onClose }: Props) {
     if (!customerName.trim()) return;
     const phone = getWhatsAppNumber();
     const url = buildWhatsAppUrl(phone, customerName.trim(), items);
+    // Decrement stock for ordered items
+    decrementStock(items.map((i) => ({ id: i.id, quantity: i.quantity })));
     window.open(url, "_blank");
     clearCart();
     setCustomerName("");
     onClose();
+    // Trigger re-render of menu by dispatching storage event
+    window.dispatchEvent(new Event("stock-updated"));
   };
 
   return (
