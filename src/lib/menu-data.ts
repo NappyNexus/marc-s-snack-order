@@ -10,6 +10,7 @@ export interface MenuItem {
   price: number;
   category: string;
   image?: string;
+  stock?: number; // undefined = unlimited
 }
 
 export interface CartItem extends MenuItem {
