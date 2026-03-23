@@ -88,7 +88,7 @@ export default function AdminPage() {
     setMenu([...menu, newItem]);
   };
 
-  const updateItem = (id: string, field: keyof MenuItem, value: string | number) => {
+  const updateItem = (id: string, field: keyof MenuItem, value: string | number | undefined) => {
     setMenu(menu.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
