@@ -123,6 +123,19 @@ export function verifyAdminPassword(input: string): boolean {
   return input === getAdminPassword();
 }
 
+// ── Stock management ──
+export function decrementStock(items: { id: string; quantity: number }[]): void {
+  const menu = getMenu();
+  const updated = menu.map((item) => {
+    const ordered = items.find((i) => i.id === item.id);
+    if (ordered && item.stock !== undefined) {
+      return { ...item, stock: Math.max(0, item.stock - ordered.quantity) };
+    }
+    return item;
+  });
+  saveMenu(updated);
+}
+
 // ── WhatsApp URL builder ──
 export function buildWhatsAppUrl(
   phone: string,
