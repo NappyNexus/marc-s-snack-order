@@ -17,36 +17,29 @@ export interface CartItem extends MenuItem {
 }
 
 export const DEFAULT_MENU: MenuItem[] = [
-  // Pastelitos Básicos
   { id: "pb-1", name: "Pastelito de Pollo", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
   { id: "pb-2", name: "Pastelito de Res", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
   { id: "pb-3", name: "Pastelito de Queso Amarillo", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
   { id: "pb-4", name: "Pastelito de Queso Crema", price: 60, category: "Pastelitos Básicos", image: pastelitoBasico },
-
-  // Pastelitos de la Casa
   { id: "pc-1", name: "Pastelito Parrillero", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
   { id: "pc-2", name: "Pastelito 4 Quesos", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
   { id: "pc-3", name: "Pastelito Pollo, Queso y Maíz", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
   { id: "pc-4", name: "Pastelito Queso y Salsa Pizza", price: 60, category: "Pastelitos de la Casa", image: pastelitoCasa },
-
-  // Pastelitos Especiales
   { id: "pe-1", name: "Pastelito Pechuga Horneada", price: 65, category: "Pastelitos Especiales", image: pastelitoEspecial },
   { id: "pe-2", name: "Pastelito Croque", price: 65, category: "Pastelitos Especiales", image: pastelitoEspecial },
-
-  // Pastelitos Super Especiales
   { id: "ps-1", name: "Pastelito Pollo Italiano", price: 70, category: "Pastelitos Super Especiales", image: pastelitoEspecial },
   { id: "ps-2", name: "Pastelito El Dorado", price: 70, category: "Pastelitos Super Especiales", image: pastelitoEspecial },
-
-  // Otros
   { id: "o-1", name: "Croquetas", price: 60, category: "Otros Snacks", image: croquetasImg },
   { id: "o-2", name: "Quipe de Res", price: 70, category: "Otros Snacks", image: quipeImg },
   { id: "o-3", name: "Quipe de Pollo", price: 70, category: "Otros Snacks", image: quipeImg },
 ];
 
 const MENU_STORAGE_KEY = "marcs-snackks-menu";
-const BANK_STORAGE_KEY = "marcs-snackks-bank";
+const BANK_STORAGE_KEY = "marcs-snackks-banks";
 const WHATSAPP_STORAGE_KEY = "marcs-snackks-whatsapp";
+const ADMIN_PASS_KEY = "marcs-snackks-admin-pass";
 
+// ── Menu ──
 export function getMenu(): MenuItem[] {
   const stored = localStorage.getItem(MENU_STORAGE_KEY);
   if (stored) {
@@ -59,7 +52,9 @@ export function saveMenu(menu: MenuItem[]): void {
   localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menu));
 }
 
+// ── Bank accounts (multiple) ──
 export interface BankInfo {
+  id: string;
   bankName: string;
   accountNumber: string;
   accountHolder: string;
@@ -67,26 +62,43 @@ export interface BankInfo {
   accountType: string;
 }
 
-const DEFAULT_BANK: BankInfo = {
-  bankName: "Banco Popular",
-  accountNumber: "000-0000000-0",
-  accountHolder: "Marc's Snackks",
-  idNumber: "000-0000000-0",
-  accountType: "Cuenta de Ahorros",
-};
+const DEFAULT_BANKS: BankInfo[] = [
+  {
+    id: "bank-1",
+    bankName: "Banco Popular",
+    accountNumber: "000-0000000-0",
+    accountHolder: "Marc's Snackks",
+    idNumber: "000-0000000-0",
+    accountType: "Cuenta de Ahorros",
+  },
+];
 
-export function getBankInfo(): BankInfo {
+export function getBankAccounts(): BankInfo[] {
   const stored = localStorage.getItem(BANK_STORAGE_KEY);
   if (stored) {
     try { return JSON.parse(stored); } catch { /* fall through */ }
   }
-  return DEFAULT_BANK;
+  return DEFAULT_BANKS;
+}
+
+export function saveBankAccounts(banks: BankInfo[]): void {
+  localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(banks));
+}
+
+// Legacy compat
+export function getBankInfo(): BankInfo {
+  return getBankAccounts()[0] || DEFAULT_BANKS[0];
 }
 
 export function saveBankInfo(info: BankInfo): void {
-  localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(info));
+  const banks = getBankAccounts();
+  const idx = banks.findIndex((b) => b.id === info.id);
+  if (idx >= 0) banks[idx] = info;
+  else banks.push(info);
+  saveBankAccounts(banks);
 }
 
+// ── WhatsApp ──
 export function getWhatsAppNumber(): string {
   return localStorage.getItem(WHATSAPP_STORAGE_KEY) || "18091234567";
 }
@@ -95,6 +107,22 @@ export function saveWhatsAppNumber(num: string): void {
   localStorage.setItem(WHATSAPP_STORAGE_KEY, num);
 }
 
+// ── Admin password ──
+const DEFAULT_ADMIN_PASS = "admin123";
+
+export function getAdminPassword(): string {
+  return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+}
+
+export function saveAdminPassword(pass: string): void {
+  localStorage.setItem(ADMIN_PASS_KEY, pass);
+}
+
+export function verifyAdminPassword(input: string): boolean {
+  return input === getAdminPassword();
+}
+
+// ── WhatsApp URL builder ──
 export function buildWhatsAppUrl(
   phone: string,
   customerName: string,
