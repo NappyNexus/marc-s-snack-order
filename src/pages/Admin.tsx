@@ -1,21 +1,82 @@
-import { useState, useEffect } from "react";
-import { getMenu, saveMenu, getBankInfo, saveBankInfo, getWhatsAppNumber, saveWhatsAppNumber } from "@/lib/menu-data";
+import { useState, useEffect, useRef } from "react";
+import {
+  getMenu, saveMenu,
+  getBankAccounts, saveBankAccounts,
+  getWhatsAppNumber, saveWhatsAppNumber,
+  getAdminPassword, saveAdminPassword, verifyAdminPassword,
+} from "@/lib/menu-data";
 import type { MenuItem, BankInfo } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+function AdminLogin({ onLogin }: { onLogin: () => void }) {
+  const [pass, setPass] = useState("");
+  const [error, setError] = useState(false);
+  const [show, setShow] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyAdminPassword(pass)) {
+      sessionStorage.setItem("marcs-admin-auth", "1");
+      onLogin();
+    } else {
+      setError(true);
+      setTimeout(() => setError(false), 1500);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
+        <div className="text-center space-y-2">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Lock className="h-7 w-7 text-primary" />
+          </div>
+          <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
+          <p className="text-sm text-muted-foreground">Ingresa la contraseña para acceder</p>
+        </div>
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            placeholder="Contraseña"
+            autoFocus
+            className={`w-full px-4 py-3 rounded-xl border bg-card text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring transition-colors ${error ? "border-destructive ring-2 ring-destructive/30" : ""}`}
+          />
+          <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {error && <p className="text-sm text-destructive text-center">Contraseña incorrecta</p>}
+        <Button type="submit" className="w-full" size="lg">Entrar</Button>
+        <Link to="/" className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Volver al menú
+        </Link>
+      </form>
+    </div>
+  );
+}
+
 export default function AdminPage() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem("marcs-admin-auth") === "1");
   const [menu, setMenu] = useState<MenuItem[]>([]);
-  const [bank, setBank] = useState<BankInfo>(getBankInfo());
+  const [banks, setBanks] = useState<BankInfo[]>([]);
   const [whatsapp, setWhatsapp] = useState(getWhatsAppNumber());
-  const [tab, setTab] = useState<"menu" | "bank">("menu");
+  const [adminPass, setAdminPass] = useState(getAdminPassword());
+  const [tab, setTab] = useState<"menu" | "bank" | "settings">("menu");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     setMenu(getMenu());
+    setBanks(getBankAccounts());
   }, []);
+
+  if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
 
   const addItem = () => {
     const newItem: MenuItem = {
@@ -35,15 +96,64 @@ export default function AdminPage() {
     setMenu(menu.filter((i) => i.id !== id));
   };
 
+  const handleImageUpload = (id: string) => {
+    setUploadTargetId(id);
+    fileInputRef.current?.click();
+  };
+
+  const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("La imagen debe ser menor a 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setMenu((prev) => prev.map((i) => (i.id === uploadTargetId ? { ...i, image: dataUrl } : i)));
+      setUploadTargetId(null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const handleSaveMenu = () => {
     saveMenu(menu);
     toast.success("Menú actualizado");
   };
 
+  // ── Bank accounts ──
+  const addBank = () => {
+    setBanks([...banks, {
+      id: `bank-${Date.now()}`,
+      bankName: "",
+      accountNumber: "",
+      accountHolder: "",
+      idNumber: "",
+      accountType: "Cuenta de Ahorros",
+    }]);
+  };
+
+  const updateBank = (id: string, field: keyof BankInfo, value: string) => {
+    setBanks(banks.map((b) => (b.id === id ? { ...b, [field]: value } : b)));
+  };
+
+  const deleteBank = (id: string) => {
+    if (banks.length <= 1) { toast.error("Debes tener al menos una cuenta"); return; }
+    setBanks(banks.filter((b) => b.id !== id));
+  };
+
   const handleSaveBank = () => {
-    saveBankInfo(bank);
+    saveBankAccounts(banks);
     saveWhatsAppNumber(whatsapp);
     toast.success("Datos actualizados");
+  };
+
+  const handleSaveSettings = () => {
+    if (adminPass.length < 4) { toast.error("La contraseña debe tener al menos 4 caracteres"); return; }
+    saveAdminPassword(adminPass);
+    toast.success("Contraseña actualizada");
   };
 
   const categories = Array.from(new Set(menu.map((i) => i.category)));
@@ -51,6 +161,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header onCartClick={() => {}} />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileSelected} />
+
       <div className="container py-8 max-w-2xl">
         <div className="flex items-center gap-3 mb-6">
           <Link to="/" className="p-2 rounded-lg hover:bg-muted transition-colors">
@@ -61,20 +173,22 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-lg p-1 mb-6">
-          <button
-            onClick={() => setTab("menu")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-all ${tab === "menu" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            Menú y Precios
-          </button>
-          <button
-            onClick={() => setTab("bank")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-semibold transition-all ${tab === "bank" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            Datos de Pago
-          </button>
+          {[
+            { key: "menu" as const, label: "Menú y Precios" },
+            { key: "bank" as const, label: "Datos de Pago" },
+            { key: "settings" as const, label: "Ajustes" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-semibold transition-all ${tab === t.key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
+        {/* ── MENU TAB ── */}
         {tab === "menu" && (
           <div className="space-y-6">
             {categories.map((cat) => {
@@ -85,12 +199,24 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     {catItems.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 p-3 bg-card rounded-xl border">
+                        {/* Image thumbnail / upload */}
+                        <button
+                          onClick={() => handleImageUpload(item.id)}
+                          className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center hover:ring-2 hover:ring-ring transition-all"
+                          title="Cambiar imagen"
+                        >
+                          {item.image ? (
+                            <img src={item.image} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Image className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </button>
                         <input
                           type="text"
                           value={item.name}
                           onChange={(e) => updateItem(item.id, "name", e.target.value)}
                           placeholder="Nombre del producto"
-                          className="flex-1 bg-transparent text-sm font-medium focus:outline-none"
+                          className="flex-1 bg-transparent text-sm font-medium focus:outline-none min-w-0"
                         />
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-muted-foreground">RD$</span>
@@ -104,7 +230,7 @@ export default function AdminPage() {
                         <select
                           value={item.category}
                           onChange={(e) => updateItem(item.id, "category", e.target.value)}
-                          className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none"
+                          className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none max-w-[100px]"
                         >
                           {categories.map((c) => (
                             <option key={c} value={c}>{c}</option>
@@ -135,28 +261,47 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ── BANK TAB ── */}
         {tab === "bank" && (
           <div className="space-y-4">
-            <div className="bg-card rounded-xl border p-5 space-y-4">
-              <h2 className="font-display font-bold">Datos Bancarios</h2>
-              {[
-                { label: "Nombre del Banco", key: "bankName" as const },
-                { label: "Tipo de Cuenta", key: "accountType" as const },
-                { label: "Número de Cuenta", key: "accountNumber" as const },
-                { label: "Titular de la Cuenta", key: "accountHolder" as const },
-                { label: "Cédula / RNC", key: "idNumber" as const },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
-                  <input
-                    type="text"
-                    value={bank[f.key]}
-                    onChange={(e) => setBank({ ...bank, [f.key]: e.target.value })}
-                    className="w-full mt-1 bg-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+            {banks.map((bank, idx) => (
+              <div key={bank.id} className="bg-card rounded-xl border p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h2 className="font-display font-bold">Cuenta {idx + 1}</h2>
+                  </div>
+                  {banks.length > 1 && (
+                    <button onClick={() => deleteBank(bank.id)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
+                {(
+                  [
+                    { label: "Nombre del Banco", key: "bankName" as const },
+                    { label: "Tipo de Cuenta", key: "accountType" as const },
+                    { label: "Número de Cuenta", key: "accountNumber" as const },
+                    { label: "Titular de la Cuenta", key: "accountHolder" as const },
+                    { label: "Cédula / RNC", key: "idNumber" as const },
+                  ] as const
+                ).map((f) => (
+                  <div key={f.key}>
+                    <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
+                    <input
+                      type="text"
+                      value={bank[f.key]}
+                      onChange={(e) => updateBank(bank.id, f.key, e.target.value)}
+                      className="w-full mt-1 bg-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            <Button variant="outline" onClick={addBank} className="gap-2">
+              <Plus className="h-4 w-4" /> Añadir Cuenta Bancaria
+            </Button>
 
             <div className="bg-card rounded-xl border p-5 space-y-4">
               <h2 className="font-display font-bold">WhatsApp del Vendedor</h2>
@@ -175,6 +320,33 @@ export default function AdminPage() {
             <Button onClick={handleSaveBank} className="gap-2">
               <Save className="h-4 w-4" /> Guardar Datos
             </Button>
+          </div>
+        )}
+
+        {/* ── SETTINGS TAB ── */}
+        {tab === "settings" && (
+          <div className="space-y-4">
+            <div className="bg-card rounded-xl border p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                <h2 className="font-display font-bold">Contraseña de Admin</h2>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Nueva contraseña</label>
+                <input
+                  type="text"
+                  value={adminPass}
+                  onChange={(e) => setAdminPass(e.target.value)}
+                  className="w-full mt-1 bg-muted rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <Button onClick={handleSaveSettings} className="gap-2">
+                <Save className="h-4 w-4" /> Guardar Contraseña
+              </Button>
+            </div>
+            <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
+              <p>La contraseña por defecto es <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono text-xs">admin123</code>. Cámbiala por una más segura.</p>
+            </div>
           </div>
         )}
       </div>
