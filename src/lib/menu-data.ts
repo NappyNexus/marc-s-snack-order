@@ -125,7 +125,7 @@ export function saveBankInfo(info: BankInfo): void {
 
 // ── WhatsApp ──
 export function getWhatsAppNumber(): string {
-  return localStorage.getItem(WHATSAPP_STORAGE_KEY) || "18091234567";
+  return localStorage.getItem(WHATSAPP_STORAGE_KEY) || "18293331281";
 }
 
 export function saveWhatsAppNumber(num: string): void {
