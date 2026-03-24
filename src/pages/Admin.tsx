@@ -102,20 +102,37 @@ export default function AdminPage() {
     fileInputRef.current?.click();
   };
 
-  const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadTargetId) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("La imagen debe ser menor a 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen debe ser menor a 5MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      setMenu((prev) => prev.map((i) => (i.id === uploadTargetId ? { ...i, image: dataUrl } : i)));
-      setUploadTargetId(null);
-    };
-    reader.readAsDataURL(file);
+
+    const ext = file.name.split(".").pop() || "jpg";
+    const filePath = `${uploadTargetId}-${Date.now()}.${ext}`;
+
+    toast.loading("Subiendo imagen...", { id: "img-upload" });
+
+    const { error } = await supabase.storage
+      .from("product-images")
+      .upload(filePath, file, { upsert: true });
+
+    if (error) {
+      toast.error("Error al subir imagen: " + error.message, { id: "img-upload" });
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("product-images")
+      .getPublicUrl(filePath);
+
+    setMenu((prev) =>
+      prev.map((i) => (i.id === uploadTargetId ? { ...i, image: urlData.publicUrl } : i))
+    );
+    setUploadTargetId(null);
+    toast.success("Imagen subida", { id: "img-upload" });
     e.target.value = "";
   };
 
