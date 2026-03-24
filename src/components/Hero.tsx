@@ -20,12 +20,12 @@ export function Hero() {
         </ScrollReveal>
         <ScrollReveal delay={100}>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-6 text-foreground leading-tight">
-            Los mejores pastelitos y snacks
+            Tu Desayuno y Snacks favoritos
           </h1>
         </ScrollReveal>
         <ScrollReveal delay={200}>
           <p className="text-muted-foreground text-base sm:text-lg mt-3 max-w-md mx-auto">
-            Pastelitos dominicanos de Solo Pastelitos y snacks de PriceSmart — directo a tu puerta 🇩🇴
+            Entregándote el mejor sabor y la mayor calidad y ya !!
           </p>
         </ScrollReveal>
       </div>
