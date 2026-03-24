@@ -198,62 +198,66 @@ export default function AdminPage() {
                   <h2 className="font-display font-bold text-lg mb-3">{cat}</h2>
                   <div className="space-y-2">
                     {catItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 p-3 bg-card rounded-xl border">
-                        {/* Image thumbnail / upload */}
-                        <button
-                          onClick={() => handleImageUpload(item.id)}
-                          className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center hover:ring-2 hover:ring-ring transition-all"
-                          title="Cambiar imagen"
-                        >
-                          {item.image ? (
-                            <img src={item.image} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <Image className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </button>
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => updateItem(item.id, "name", e.target.value)}
-                          placeholder="Nombre del producto"
-                          className="flex-1 bg-transparent text-sm font-medium focus:outline-none min-w-0"
-                        />
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">RD$</span>
+                      <div key={item.id} className="bg-card rounded-xl border p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          {/* Image thumbnail / upload */}
+                          <button
+                            onClick={() => handleImageUpload(item.id)}
+                            className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center hover:ring-2 hover:ring-ring transition-all"
+                            title="Cambiar imagen"
+                          >
+                            {item.image ? (
+                              <img src={item.image} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Image className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
                           <input
-                            type="number"
-                            value={item.price}
-                            onChange={(e) => updateItem(item.id, "price", Number(e.target.value))}
-                            className="w-16 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums"
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => updateItem(item.id, "name", e.target.value)}
+                            placeholder="Nombre del producto"
+                            className="flex-1 bg-transparent text-sm font-medium focus:outline-none min-w-0"
                           />
+                          <button
+                            onClick={() => deleteItem(item.id)}
+                            className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Stock</span>
-                          <input
-                            type="number"
-                            value={item.stock ?? ""}
-                            onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
-                            placeholder="∞"
-                            className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
-                            min={0}
-                          />
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">RD$</span>
+                            <input
+                              type="number"
+                              value={item.price}
+                              onChange={(e) => updateItem(item.id, "price", Number(e.target.value))}
+                              className="w-16 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Stock</span>
+                            <input
+                              type="number"
+                              value={item.stock ?? ""}
+                              onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
+                              placeholder="∞"
+                              className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
+                              min={0}
+                            />
+                          </div>
+                          <select
+                            value={item.category}
+                            onChange={(e) => updateItem(item.id, "category", e.target.value)}
+                            className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none flex-1 min-w-0"
+                          >
+                            {categories.map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                            <option value="Nueva Categoría">+ Nueva</option>
+                          </select>
                         </div>
-                        <select
-                          value={item.category}
-                          onChange={(e) => updateItem(item.id, "category", e.target.value)}
-                          className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none max-w-[100px]"
-                        >
-                          {categories.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                          <option value="Nueva Categoría">+ Nueva</option>
-                        </select>
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       </div>
                     ))}
                   </div>
