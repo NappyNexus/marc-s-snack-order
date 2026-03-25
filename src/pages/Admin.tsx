@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  getMenu, saveMenu,
-  getBankAccounts, saveBankAccounts,
-  getWhatsAppNumber, saveWhatsAppNumber,
-  getAdminPassword, saveAdminPassword, verifyAdminPassword,
-} from "@/lib/menu-data";
+import { useMenu, saveMenuToDb } from "@/hooks/use-menu";
+import { useBankAccounts, useWhatsApp, useAdminPassword } from "@/hooks/use-settings";
 import type { MenuItem, BankInfo } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -17,10 +13,12 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [pass, setPass] = useState("");
   const [error, setError] = useState(false);
   const [show, setShow] = useState(false);
+  const { verify } = useAdminPassword();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verifyAdminPassword(pass)) {
+    const ok = await verify(pass);
+    if (ok) {
       sessionStorage.setItem("marcs-admin-auth", "1");
       onLogin();
     } else {
@@ -64,18 +62,18 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem("marcs-admin-auth") === "1");
+  const { menu: dbMenu, loading: menuLoading } = useMenu();
   const [menu, setMenu] = useState<MenuItem[]>([]);
-  const [banks, setBanks] = useState<BankInfo[]>([]);
-  const [whatsapp, setWhatsapp] = useState(getWhatsAppNumber());
-  const [adminPass, setAdminPass] = useState(getAdminPassword());
+  const { banks, setBanks, save: saveBanks } = useBankAccounts();
+  const { number: whatsapp, setNumber: setWhatsapp, save: saveWhatsapp } = useWhatsApp();
+  const { password: adminPass, setPassword: setAdminPass, save: saveAdminPass } = useAdminPassword();
   const [tab, setTab] = useState<"menu" | "bank" | "settings">("menu");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMenu(getMenu());
-    setBanks(getBankAccounts());
-  }, []);
+    if (!menuLoading) setMenu(dbMenu);
+  }, [dbMenu, menuLoading]);
 
   if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
 
@@ -136,9 +134,11 @@ export default function AdminPage() {
     e.target.value = "";
   };
 
-  const handleSaveMenu = () => {
-    saveMenu(menu);
-    toast.success("Menú actualizado");
+  const handleSaveMenu = async () => {
+    toast.loading("Guardando menú...", { id: "save-menu" });
+    const ok = await saveMenuToDb(menu);
+    if (ok) toast.success("Menú actualizado", { id: "save-menu" });
+    else toast.error("Error al guardar menú", { id: "save-menu" });
   };
 
   // ── Bank accounts ──
@@ -162,15 +162,15 @@ export default function AdminPage() {
     setBanks(banks.filter((b) => b.id !== id));
   };
 
-  const handleSaveBank = () => {
-    saveBankAccounts(banks);
-    saveWhatsAppNumber(whatsapp);
-    toast.success("Datos actualizados");
+  const handleSaveBank = async () => {
+    toast.loading("Guardando...", { id: "save-bank" });
+    await Promise.all([saveBanks(banks), saveWhatsapp(whatsapp)]);
+    toast.success("Datos actualizados", { id: "save-bank" });
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     if (adminPass.length < 4) { toast.error("La contraseña debe tener al menos 4 caracteres"); return; }
-    saveAdminPassword(adminPass);
+    await saveAdminPass(adminPass);
     toast.success("Contraseña actualizada");
   };
 
@@ -209,88 +209,93 @@ export default function AdminPage() {
         {/* ── MENU TAB ── */}
         {tab === "menu" && (
           <div className="space-y-6">
-            {categories.map((cat) => {
-              const catItems = menu.filter((i) => i.category === cat);
-              return (
-                <div key={cat}>
-                  <h2 className="font-display font-bold text-lg mb-3">{cat}</h2>
-                  <div className="space-y-2">
-                    {catItems.map((item) => (
-                      <div key={item.id} className="bg-card rounded-xl border p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          {/* Image thumbnail / upload */}
-                          <button
-                            onClick={() => handleImageUpload(item.id)}
-                            className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center hover:ring-2 hover:ring-ring transition-all"
-                            title="Cambiar imagen"
-                          >
-                            {item.image ? (
-                              <img src={item.image} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <Image className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </button>
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => updateItem(item.id, "name", e.target.value)}
-                            placeholder="Nombre del producto"
-                            className="flex-1 bg-transparent text-sm font-medium focus:outline-none min-w-0"
-                          />
-                          <button
-                            onClick={() => deleteItem(item.id)}
-                            className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">RD$</span>
-                            <input
-                              type="number"
-                              value={item.price}
-                              onChange={(e) => updateItem(item.id, "price", Number(e.target.value))}
-                              className="w-16 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums"
-                            />
+            {menuLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Cargando menú...</div>
+            ) : (
+              <>
+                {categories.map((cat) => {
+                  const catItems = menu.filter((i) => i.category === cat);
+                  return (
+                    <div key={cat}>
+                      <h2 className="font-display font-bold text-lg mb-3">{cat}</h2>
+                      <div className="space-y-2">
+                        {catItems.map((item) => (
+                          <div key={item.id} className="bg-card rounded-xl border p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleImageUpload(item.id)}
+                                className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center hover:ring-2 hover:ring-ring transition-all"
+                                title="Cambiar imagen"
+                              >
+                                {item.image ? (
+                                  <img src={item.image} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <Image className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </button>
+                              <input
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => updateItem(item.id, "name", e.target.value)}
+                                placeholder="Nombre del producto"
+                                className="flex-1 bg-transparent text-sm font-medium focus:outline-none min-w-0"
+                              />
+                              <button
+                                onClick={() => deleteItem(item.id)}
+                                className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">RD$</span>
+                                <input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={(e) => updateItem(item.id, "price", Number(e.target.value))}
+                                  className="w-16 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">Stock</span>
+                                <input
+                                  type="number"
+                                  value={item.stock ?? ""}
+                                  onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
+                                  placeholder="∞"
+                                  className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
+                                  min={0}
+                                />
+                              </div>
+                              <select
+                                value={item.category}
+                                onChange={(e) => updateItem(item.id, "category", e.target.value)}
+                                className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none flex-1 min-w-0"
+                              >
+                                {categories.map((c) => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                                <option value="Nueva Categoría">+ Nueva</option>
+                              </select>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Stock</span>
-                            <input
-                              type="number"
-                              value={item.stock ?? ""}
-                              onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
-                              placeholder="∞"
-                              className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
-                              min={0}
-                            />
-                          </div>
-                          <select
-                            value={item.category}
-                            onChange={(e) => updateItem(item.id, "category", e.target.value)}
-                            className="bg-muted rounded-md px-2 py-1 text-xs focus:outline-none flex-1 min-w-0"
-                          >
-                            {categories.map((c) => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                            <option value="Nueva Categoría">+ Nueva</option>
-                          </select>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                    </div>
+                  );
+                })}
 
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={addItem} className="gap-2">
-                <Plus className="h-4 w-4" /> Añadir Producto
-              </Button>
-              <Button onClick={handleSaveMenu} className="gap-2">
-                <Save className="h-4 w-4" /> Guardar Menú
-              </Button>
-            </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={addItem} className="gap-2">
+                    <Plus className="h-4 w-4" /> Añadir Producto
+                  </Button>
+                  <Button onClick={handleSaveMenu} className="gap-2">
+                    <Save className="h-4 w-4" /> Guardar Menú
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

@@ -1,40 +1,45 @@
 import { useState } from "react";
 import { X, Minus, Plus, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
-import { buildWhatsAppUrl, getWhatsAppNumber, decrementStock } from "@/lib/menu-data";
+import { buildWhatsAppUrl } from "@/lib/menu-data";
+import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
+import { decrementStockInDb } from "@/hooks/use-menu";
 import { Button } from "@/components/ui/button";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  onOrderPlaced?: () => void;
 }
 
-export function CartDrawer({ open, onClose }: Props) {
+export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
   const { items, updateQuantity, removeItem, clearCart, totalPrice } = useCart();
   const [customerName, setCustomerName] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const handleOrder = () => {
-    if (!customerName.trim()) return;
-    const phone = getWhatsAppNumber();
-    const url = buildWhatsAppUrl(phone, customerName.trim(), items);
-    // Decrement stock for ordered items
-    decrementStock(items.map((i) => ({ id: i.id, quantity: i.quantity })));
-    window.open(url, "_blank");
-    clearCart();
-    setCustomerName("");
-    onClose();
-    // Trigger re-render of menu by dispatching storage event
-    window.dispatchEvent(new Event("stock-updated"));
+  const handleOrder = async () => {
+    if (!customerName.trim() || sending) return;
+    setSending(true);
+    try {
+      const phone = await getWhatsAppNumberFromDb();
+      const url = buildWhatsAppUrl(phone, customerName.trim(), items);
+      await decrementStockInDb(items.map((i) => ({ id: i.id, quantity: i.quantity })));
+      window.open(url, "_blank");
+      clearCart();
+      setCustomerName("");
+      onClose();
+      onOrderPlaced?.();
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <>
-      {/* Overlay */}
       <div
         className={`fixed inset-0 z-50 bg-foreground/30 backdrop-blur-sm transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
-      {/* Drawer */}
       <div
         className={`fixed right-0 top-0 z-50 h-full w-full max-w-md bg-card shadow-2xl transition-transform duration-300 ease-out flex flex-col ${open ? "translate-x-0" : "translate-x-full"}`}
       >
@@ -100,11 +105,11 @@ export function CartDrawer({ open, onClose }: Props) {
               variant="whatsapp"
               size="lg"
               className="w-full"
-              disabled={!customerName.trim()}
+              disabled={!customerName.trim() || sending}
               onClick={handleOrder}
             >
               <MessageCircle className="h-5 w-5" />
-              Pedir por WhatsApp
+              {sending ? "Enviando..." : "Pedir por WhatsApp"}
             </Button>
           </div>
         )}
