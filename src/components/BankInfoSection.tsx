@@ -1,10 +1,10 @@
-import { getBankAccounts } from "@/lib/menu-data";
+import { useBankAccounts } from "@/hooks/use-settings";
 import { ScrollReveal } from "./ScrollReveal";
 import { Landmark, Copy, Building2 } from "lucide-react";
 import { useState } from "react";
 
 export function BankInfoSection() {
-  const banks = getBankAccounts();
+  const { banks, loading } = useBankAccounts();
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, field: string) => {
@@ -20,6 +20,8 @@ export function BankInfoSection() {
     { label: "Titular", key: "accountHolder" as const },
     { label: "Cédula / RNC", key: "idNumber" as const },
   ];
+
+  if (loading) return null;
 
   return (
     <section className="py-12 bg-primary/5">
