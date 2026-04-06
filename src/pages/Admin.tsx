@@ -5,7 +5,7 @@ import { useBankAccounts, useWhatsApp, useAdminPassword } from "@/hooks/use-sett
 import type { MenuItem, BankInfo } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2 } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
