@@ -4,6 +4,7 @@ import { useCart } from "@/hooks/use-cart";
 import { buildWhatsAppUrl } from "@/lib/menu-data";
 import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
 import { decrementStockInDb } from "@/hooks/use-menu";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -25,6 +26,12 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
       const url = buildWhatsAppUrl(phone, customerName.trim(), items);
       // Use location.href instead of window.open to avoid popup blockers in Safari/Firefox
       // Decrement stock first, then navigate
+      // Save order to database
+      await supabase.from("orders").insert({
+        customer_name: customerName.trim(),
+        items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        total: totalPrice,
+      });
       await decrementStockInDb(items.map((i) => ({ id: i.id, quantity: i.quantity })));
       window.location.href = url;
       clearCart();

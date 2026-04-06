@@ -5,7 +5,7 @@ import { useBankAccounts, useWhatsApp, useAdminPassword } from "@/hooks/use-sett
 import type { MenuItem, BankInfo } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2 } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -67,13 +67,29 @@ export default function AdminPage() {
   const { banks, setBanks, save: saveBanks } = useBankAccounts();
   const { number: whatsapp, setNumber: setWhatsapp, save: saveWhatsapp } = useWhatsApp();
   const { password: adminPass, setPassword: setAdminPass, save: saveAdminPass } = useAdminPassword();
-  const [tab, setTab] = useState<"menu" | "bank" | "settings">("menu");
+  const [tab, setTab] = useState<"menu" | "bank" | "settings" | "orders">("menu");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!menuLoading) setMenu(dbMenu);
   }, [dbMenu, menuLoading]);
+
+  // Fetch orders when tab switches to orders
+  useEffect(() => {
+    if (tab !== "orders") return;
+    setOrdersLoading(true);
+    supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setOrders(data ?? []);
+        setOrdersLoading(false);
+      });
+  }, [tab]);
 
   if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
 
@@ -192,8 +208,9 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-lg p-1 mb-6">
           {[
-            { key: "menu" as const, label: "Menú y Precios" },
-            { key: "bank" as const, label: "Datos de Pago" },
+            { key: "menu" as const, label: "Menú" },
+            { key: "orders" as const, label: "Pedidos" },
+            { key: "bank" as const, label: "Pago" },
             { key: "settings" as const, label: "Ajustes" },
           ].map((t) => (
             <button
@@ -385,6 +402,48 @@ export default function AdminPage() {
             <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
               <p>La contraseña por defecto es <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono text-xs">admin123</code>. Cámbiala por una más segura.</p>
             </div>
+          </div>
+        )}
+        {/* ── ORDERS TAB ── */}
+        {tab === "orders" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              <h2 className="font-display font-bold text-lg">Historial de Pedidos</h2>
+            </div>
+            {ordersLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Cargando pedidos...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-display text-lg">No hay pedidos aún</p>
+                <p className="text-sm mt-1">Los pedidos aparecerán aquí cuando los clientes ordenen.</p>
+              </div>
+            ) : (
+              orders.map((order) => {
+                const orderItems = order.items as { name: string; quantity: number; price: number }[];
+                return (
+                  <div key={order.id} className="bg-card rounded-xl border p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold">{order.customer_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(order.created_at).toLocaleString("es-DO", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {orderItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span>{item.quantity}x {item.name}</span>
+                          <span className="tabular-nums text-muted-foreground">RD${(item.price * item.quantity).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-1 border-t">
+                      <span className="font-bold text-accent tabular-nums">Total: RD${order.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
       </div>
