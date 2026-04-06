@@ -77,6 +77,20 @@ export default function AdminPage() {
     if (!menuLoading) setMenu(dbMenu);
   }, [dbMenu, menuLoading]);
 
+  // Fetch orders when tab switches to orders
+  useEffect(() => {
+    if (tab !== "orders") return;
+    setOrdersLoading(true);
+    supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setOrders(data ?? []);
+        setOrdersLoading(false);
+      });
+  }, [tab]);
+
   if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
 
   const addItem = () => {
