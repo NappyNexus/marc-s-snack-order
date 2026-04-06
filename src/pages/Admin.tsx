@@ -67,7 +67,9 @@ export default function AdminPage() {
   const { banks, setBanks, save: saveBanks } = useBankAccounts();
   const { number: whatsapp, setNumber: setWhatsapp, save: saveWhatsapp } = useWhatsApp();
   const { password: adminPass, setPassword: setAdminPass, save: saveAdminPass } = useAdminPassword();
-  const [tab, setTab] = useState<"menu" | "bank" | "settings">("menu");
+  const [tab, setTab] = useState<"menu" | "bank" | "settings" | "orders">("menu");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
