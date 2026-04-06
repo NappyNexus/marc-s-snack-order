@@ -4,6 +4,7 @@ import { useCart } from "@/hooks/use-cart";
 import { buildWhatsAppUrl } from "@/lib/menu-data";
 import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
 import { decrementStockInDb } from "@/hooks/use-menu";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 interface Props {
