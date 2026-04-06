@@ -23,8 +23,10 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
     try {
       const phone = await getWhatsAppNumberFromDb();
       const url = buildWhatsAppUrl(phone, customerName.trim(), items);
+      // Use location.href instead of window.open to avoid popup blockers in Safari/Firefox
+      // Decrement stock first, then navigate
       await decrementStockInDb(items.map((i) => ({ id: i.id, quantity: i.quantity })));
-      window.open(url, "_blank");
+      window.location.href = url;
       clearCart();
       setCustomerName("");
       onClose();
