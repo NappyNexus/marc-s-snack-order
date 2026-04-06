@@ -208,8 +208,9 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-lg p-1 mb-6">
           {[
-            { key: "menu" as const, label: "Menú y Precios" },
-            { key: "bank" as const, label: "Datos de Pago" },
+            { key: "menu" as const, label: "Menú" },
+            { key: "orders" as const, label: "Pedidos" },
+            { key: "bank" as const, label: "Pago" },
             { key: "settings" as const, label: "Ajustes" },
           ].map((t) => (
             <button
