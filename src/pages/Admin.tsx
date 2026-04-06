@@ -404,6 +404,48 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        {/* ── ORDERS TAB ── */}
+        {tab === "orders" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              <h2 className="font-display font-bold text-lg">Historial de Pedidos</h2>
+            </div>
+            {ordersLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Cargando pedidos...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-display text-lg">No hay pedidos aún</p>
+                <p className="text-sm mt-1">Los pedidos aparecerán aquí cuando los clientes ordenen.</p>
+              </div>
+            ) : (
+              orders.map((order) => {
+                const orderItems = order.items as { name: string; quantity: number; price: number }[];
+                return (
+                  <div key={order.id} className="bg-card rounded-xl border p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold">{order.customer_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(order.created_at).toLocaleString("es-DO", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {orderItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span>{item.quantity}x {item.name}</span>
+                          <span className="tabular-nums text-muted-foreground">RD${(item.price * item.quantity).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-1 border-t">
+                      <span className="font-bold text-accent tabular-nums">Total: RD${order.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
