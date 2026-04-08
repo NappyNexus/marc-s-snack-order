@@ -68,7 +68,7 @@ export default function AdminPage() {
   const { banks, setBanks, save: saveBanks } = useBankAccounts();
   const { number: whatsapp, setNumber: setWhatsapp, save: saveWhatsapp } = useWhatsApp();
   const { password: adminPass, setPassword: setAdminPass, save: saveAdminPass } = useAdminPassword();
-  const [tab, setTab] = useState<"menu" | "bank" | "settings" | "orders">("menu");
+  const [tab, setTab] = useState<"menu" | "bank" | "settings" | "orders">("orders");
   const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -209,9 +209,9 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-1 bg-muted rounded-lg p-1 mb-6">
           {[
-            { key: "menu" as const, label: "Menú" },
             { key: "orders" as const, label: "Pedidos" },
-            { key: "bank" as const, label: "Pago" },
+            { key: "menu" as const, label: "Menú" },
+            { key: "bank" as const, label: "Pagos" },
             { key: "settings" as const, label: "Ajustes" },
           ].map((t) => (
             <button
