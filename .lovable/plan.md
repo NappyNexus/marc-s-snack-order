@@ -1,33 +1,30 @@
 
 
-## Plan: Banco de Pedidos (Order Log)
+## Plan: Exportar Pedidos a Excel con Pestañas por Día
 
 ### Resumen
-Cada vez que un cliente haga un pedido por WhatsApp, se guardará automáticamente un registro del pedido en la base de datos. El admin podrá ver todos los pedidos desde el panel de administración.
-
-### Opción Google Sheets
-Es posible conectar con Google Sheets usando un webhook (Zapier o similar), pero requiere configuración externa. La opción más directa y sin dependencias externas es guardar los pedidos en tu propia base de datos en la nube — que ya tienes activa.
+Agregar un botón "Exportar Excel" en la sección Pedidos del admin. El archivo descargado tendrá **una pestaña (sheet) por cada día** con pedidos, mostrando los detalles de cada orden.
 
 ### Cambios a realizar
 
-**1. Crear tabla `orders` en la base de datos**
-- `id` (uuid, auto-generado)
-- `customer_name` (texto)
-- `items` (JSON con nombre, cantidad, precio de cada producto)
-- `total` (entero)
-- `created_at` (timestamp)
-- RLS: lectura pública, inserción pública
+**1. Instalar dependencia `xlsx`**
+- Librería ligera para generar archivos `.xlsx` con múltiples hojas desde el navegador
 
-**2. Guardar pedido al hacer la orden (`CartDrawer.tsx`)**
-- Antes de redirigir a WhatsApp, insertar el pedido en la tabla `orders`
+**2. Botón de exportación en Admin (`src/pages/Admin.tsx`)**
+- Agregar botón "Exportar Excel" en la sección Pedidos
+- Al hacer clic:
+  1. Agrupar los pedidos por fecha (día)
+  2. Crear una hoja por cada día (nombre de pestaña = fecha, ej: "2026-04-08")
+  3. Cada hoja contiene columnas: Hora, Cliente, Items, Total
+  4. Descargar automáticamente el archivo `.xlsx`
 
-**3. Vista de pedidos en el Admin (`Admin.tsx`)**
-- Nueva pestaña/sección "Pedidos" en el panel admin
-- Tabla con: fecha, nombre del cliente, items, total
-- Ordenados del más reciente al más antiguo
+### Detalles técnicos
+- Se usa la librería `xlsx` (SheetJS) que funciona 100% en el navegador sin backend
+- Los items JSON se aplanarán a texto legible (ej: "2x Pastelito, 1x Jugo")
+- El archivo se puede abrir directamente en Google Sheets o Excel
+- No requiere cambios en la base de datos
 
-### Archivos a modificar
-- Nueva migración SQL (tabla `orders`)
-- `src/components/CartDrawer.tsx` — insertar pedido en DB
-- `src/pages/Admin.tsx` — sección para ver pedidos
+### Archivo a modificar
+- `src/pages/Admin.tsx` — agregar botón y lógica de exportación
+- `package.json` — agregar dependencia `xlsx`
 
