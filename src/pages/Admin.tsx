@@ -5,7 +5,8 @@ import { useBankAccounts, useWhatsApp, useAdminPassword } from "@/hooks/use-sett
 import type { MenuItem, BankInfo } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Lock, Image, Eye, EyeOff, Building2, ClipboardList, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -407,9 +408,41 @@ export default function AdminPage() {
         {/* ── ORDERS TAB ── */}
         {tab === "orders" && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              <h2 className="font-display font-bold text-lg">Historial de Pedidos</h2>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                <h2 className="font-display font-bold text-lg">Historial de Pedidos</h2>
+              </div>
+              {orders.length > 0 && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                  const grouped: Record<string, any[]> = {};
+                  orders.forEach((o) => {
+                    const day = new Date(o.created_at).toISOString().slice(0, 10);
+                    if (!grouped[day]) grouped[day] = [];
+                    grouped[day].push(o);
+                  });
+                  const wb = XLSX.utils.book_new();
+                  Object.keys(grouped).sort().reverse().forEach((day) => {
+                    const rows = grouped[day].map((o) => {
+                      const items = (o.items as { name: string; quantity: number; price: number }[])
+                        .map((i) => `${i.quantity}x ${i.name}`).join(", ");
+                      return {
+                        Hora: new Date(o.created_at).toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" }),
+                        Cliente: o.customer_name,
+                        Items: items,
+                        "Total (RD$)": o.total,
+                      };
+                    });
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws["!cols"] = [{ wch: 8 }, { wch: 20 }, { wch: 40 }, { wch: 12 }];
+                    XLSX.utils.book_append_sheet(wb, ws, day);
+                  });
+                  XLSX.writeFile(wb, `pedidos_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                  toast.success("Excel descargado");
+                }}>
+                  <Download className="h-4 w-4" /> Exportar Excel
+                </Button>
+              )}
             </div>
             {ordersLoading ? (
               <div className="text-center py-8 text-muted-foreground">Cargando pedidos...</div>
