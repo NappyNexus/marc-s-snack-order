@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { CartItem, MenuItem } from "@/lib/menu-data";
@@ -28,6 +28,7 @@ function getCartSessionKey() {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [sessionKey] = useState(getCartSessionKey);
+  const itemsCountRef = useRef(0);
 
   const reserveQuantity = useCallback(async (id: string, quantity: number) => {
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
@@ -89,8 +90,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [sessionKey]);
 
   useEffect(() => {
+    itemsCountRef.current = items.length;
+  }, [items.length]);
+
+  useEffect(() => {
     const releaseOnExit = () => {
-      if (items.length > 0) void supabase.rpc("release_cart_reservations", { _session_key: sessionKey });
+      if (itemsCountRef.current > 0) void supabase.rpc("release_cart_reservations", { _session_key: sessionKey });
     };
 
     window.addEventListener("pagehide", releaseOnExit);
@@ -98,7 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("pagehide", releaseOnExit);
       releaseOnExit();
     };
-  }, [items.length, sessionKey]);
+  }, [sessionKey]);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
