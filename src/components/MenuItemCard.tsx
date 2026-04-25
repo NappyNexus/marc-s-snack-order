@@ -6,8 +6,7 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
   const { addItem, items } = useCart();
   const inCart = items.find((i) => i.id === item.id);
   const isSoldOut = item.stock !== undefined && item.stock <= 0;
-  const cartQty = inCart?.quantity ?? 0;
-  const canAdd = item.stock === undefined || cartQty < item.stock;
+  const canAdd = item.stock === undefined || item.stock > 0;
 
   return (
     <div className={`group relative flex gap-3 p-3 rounded-xl bg-card border shadow-sm transition-[box-shadow,opacity] duration-200 overflow-hidden ${isSoldOut ? "opacity-60 grayscale" : "hover:shadow-md"}`}>

@@ -35,6 +35,21 @@ export function useMenu() {
     fetchMenu();
   }, [fetchMenu]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-menu-stock")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "menu_items" },
+        () => fetchMenu()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchMenu]);
+
   return { menu, loading, refetch: fetchMenu };
 }
 

@@ -32,6 +32,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_reservations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          item_id: string
+          quantity: number
+          session_key: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          item_id: string
+          quantity?: number
+          session_key: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          item_id?: string
+          quantity?: number
+          session_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string
@@ -94,7 +127,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_cart_reservations: { Args: never; Returns: undefined }
+      complete_cart_reservations: {
+        Args: { _session_key: string }
+        Returns: undefined
+      }
+      release_cart_reservations: {
+        Args: { _session_key: string }
+        Returns: undefined
+      }
+      reserve_cart_item: {
+        Args: {
+          _expires_at?: string
+          _item_id: string
+          _quantity: number
+          _session_key: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

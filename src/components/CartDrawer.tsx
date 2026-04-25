@@ -3,7 +3,6 @@ import { X, Minus, Plus, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { buildWhatsAppUrl } from "@/lib/menu-data";
 import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
-import { decrementStockInDb } from "@/hooks/use-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +13,7 @@ interface Props {
 }
 
 export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
-  const { items, updateQuantity, removeItem, clearCart, totalPrice } = useCart();
+  const { items, updateQuantity, removeItem, clearCart, completeReservations, totalPrice } = useCart();
   const [customerName, setCustomerName] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -32,9 +31,9 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
         items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
         total: totalPrice,
       });
-      await decrementStockInDb(items.map((i) => ({ id: i.id, quantity: i.quantity })));
+      await completeReservations();
       window.location.href = url;
-      clearCart();
+      await clearCart({ releaseReservations: false });
       setCustomerName("");
       onClose();
       onOrderPlaced?.();

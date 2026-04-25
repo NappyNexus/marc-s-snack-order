@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can manage cart reservations" ON public.cart_reservations;
