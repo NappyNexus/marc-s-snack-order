@@ -452,30 +452,48 @@ export default function AdminPage() {
                 <p className="text-sm mt-1">Los pedidos aparecerán aquí cuando los clientes ordenen.</p>
               </div>
             ) : (
-              orders.map((order) => {
-                const orderItems = order.items as { name: string; quantity: number; price: number }[];
-                return (
-                  <div key={order.id} className="bg-card rounded-xl border p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold">{order.customer_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleString("es-DO", { dateStyle: "short", timeStyle: "short" })}
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {orderItems.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span>{item.quantity}x {item.name}</span>
-                          <span className="tabular-nums text-muted-foreground">RD${(item.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-end pt-1 border-t">
-                      <span className="font-bold text-accent tabular-nums">Total: RD${order.total.toLocaleString()}</span>
-                    </div>
+              orders.map((o) => o).reduce<{ day: string; orders: any[] }[]>((acc, o) => {
+                const day = new Date(o.created_at).toLocaleDateString("es-DO", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+                const last = acc[acc.length - 1];
+                if (last && last.day === day) last.orders.push(o);
+                else acc.push({ day, orders: [o] });
+                return acc;
+              }, []).map(({ day, orders: dayOrders }) => (
+                <div key={day} className="space-y-3">
+                  <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 -mx-1 px-1 z-10">
+                    <h3 className="font-display font-bold text-base capitalize text-primary border-b pb-1">{day}</h3>
                   </div>
-                );
-              })
+                  {dayOrders.map((order) => {
+                    const orderItems = order.items as { name: string; quantity: number; price: number }[];
+                    return (
+                      <div key={order.id} className="bg-card rounded-xl border p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-md bg-primary/10 text-primary text-xs font-bold tabular-nums">
+                              #{order.order_number ?? "—"}
+                            </span>
+                            <span className="font-bold">{order.customer_name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {orderItems.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-sm">
+                              <span>{item.quantity}x {item.name}</span>
+                              <span className="tabular-nums text-muted-foreground">RD${(item.price * item.quantity).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-end pt-1 border-t">
+                          <span className="font-bold text-accent tabular-nums">Total: RD${order.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
         )}
