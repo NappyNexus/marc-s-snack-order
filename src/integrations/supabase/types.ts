@@ -104,6 +104,7 @@ export type Database = {
           customer_name: string
           id: string
           items: Json
+          order_number: number
           total: number
         }
         Insert: {
@@ -111,6 +112,7 @@ export type Database = {
           customer_name: string
           id?: string
           items: Json
+          order_number?: number
           total?: number
         }
         Update: {
@@ -118,6 +120,7 @@ export type Database = {
           customer_name?: string
           id?: string
           items?: Json
+          order_number?: number
           total?: number
         }
         Relationships: []

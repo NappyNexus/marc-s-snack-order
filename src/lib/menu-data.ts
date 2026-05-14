@@ -164,10 +164,12 @@ export function decrementStock(items: { id: string; quantity: number }[]): void 
 export function buildWhatsAppUrl(
   phone: string,
   customerName: string,
-  items: CartItem[]
+  items: CartItem[],
+  orderNumber?: number
 ): string {
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   let msg = `🛒 *Pedido de Marc's Snackks*\n\n`;
+  if (orderNumber !== undefined) msg += `🔢 *Pedido #${orderNumber}*\n`;
   msg += `👤 *Cliente:* ${customerName}\n\n`;
   msg += `📋 *Detalle del pedido:*\n`;
   msg += `━━━━━━━━━━━━━━━━━━\n`;

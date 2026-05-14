@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Minus, Plus, MessageCircle } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { buildWhatsAppUrl } from "@/lib/menu-data";
 import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -13,25 +15,45 @@ interface Props {
 }
 
 export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
-  const { items, updateQuantity, removeItem, clearCart, completeReservations, totalPrice } = useCart();
+  const { items, updateQuantity, clearCart, completeReservations, totalPrice } = useCart();
   const [customerName, setCustomerName] = useState("");
   const [sending, setSending] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCancel = async () => {
+    if (sending) return;
+    await clearCart({ releaseReservations: true });
+    setCustomerName("");
+    onClose();
+    navigate("/");
+    toast.success("Pedido cancelado, los productos volvieron al inventario");
+  };
 
   const handleOrder = async () => {
     if (!customerName.trim() || sending) return;
     setSending(true);
     try {
       const phone = await getWhatsAppNumberFromDb();
-      const url = buildWhatsAppUrl(phone, customerName.trim(), items);
-      // Use location.href instead of window.open to avoid popup blockers in Safari/Firefox
-      // Decrement stock first, then navigate
-      // Save order to database
-      await supabase.from("orders").insert({
-        customer_name: customerName.trim(),
-        items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-        total: totalPrice,
-      });
+      const { data: inserted, error } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: customerName.trim(),
+          items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+          total: totalPrice,
+        })
+        .select("order_number")
+        .single();
+
+      if (error) {
+        toast.error("Error al guardar el pedido");
+        return;
+      }
+
+      const orderNumber = inserted?.order_number as number | undefined;
+      const url = buildWhatsAppUrl(phone, customerName.trim(), items, orderNumber);
+
       await completeReservations();
+      toast.success(`Pedido #${orderNumber} registrado`);
       window.location.href = url;
       await clearCart({ releaseReservations: false });
       setCustomerName("");
@@ -109,16 +131,27 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
               onChange={(e) => setCustomerName(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <Button
-              variant="whatsapp"
-              size="lg"
-              className="w-full"
-              disabled={!customerName.trim() || sending}
-              onClick={handleOrder}
-            >
-              <MessageCircle className="h-5 w-5" />
-              {sending ? "Enviando..." : "Pedir por WhatsApp"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1"
+                disabled={sending}
+                onClick={handleCancel}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="whatsapp"
+                size="lg"
+                className="flex-1"
+                disabled={!customerName.trim() || sending}
+                onClick={handleOrder}
+              >
+                <MessageCircle className="h-5 w-5" />
+                {sending ? "Enviando..." : "Ordenar"}
+              </Button>
+            </div>
           </div>
         )}
       </div>
