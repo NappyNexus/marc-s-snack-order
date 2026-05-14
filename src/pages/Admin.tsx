@@ -435,7 +435,7 @@ export default function AdminPage() {
                       };
                     });
                     const ws = XLSX.utils.json_to_sheet(rows);
-                    ws["!cols"] = [{ wch: 8 }, { wch: 20 }, { wch: 40 }, { wch: 12 }];
+                    ws["!cols"] = [{ wch: 10 }, { wch: 8 }, { wch: 20 }, { wch: 40 }, { wch: 12 }];
                     XLSX.utils.book_append_sheet(wb, ws, day);
                   });
                   XLSX.writeFile(wb, `pedidos_${new Date().toISOString().slice(0, 10)}.xlsx`);
