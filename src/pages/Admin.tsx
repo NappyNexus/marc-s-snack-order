@@ -427,6 +427,7 @@ export default function AdminPage() {
                       const items = (o.items as { name: string; quantity: number; price: number }[])
                         .map((i) => `${i.quantity}x ${i.name}`).join(", ");
                       return {
+                        "Pedido #": o.order_number ?? "",
                         Hora: new Date(o.created_at).toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" }),
                         Cliente: o.customer_name,
                         Items: items,
