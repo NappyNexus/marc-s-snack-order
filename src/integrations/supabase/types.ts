@@ -148,6 +148,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      save_menu_inventory: {
+        Args: { _menu: Json; _stock_ids: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
