@@ -1,12 +1,14 @@
 import { Plus } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import type { MenuItem } from "@/lib/menu-data";
+import { hasAvailableStock } from "@/lib/inventory";
+import { Button } from "@/components/ui/button";
 
 export function MenuItemCard({ item }: { item: MenuItem }) {
   const { addItem, items } = useCart();
   const inCart = items.find((i) => i.id === item.id);
-  const isSoldOut = item.stock !== undefined && item.stock <= 0;
-  const canAdd = item.stock === undefined || item.stock > 0;
+  const canAdd = hasAvailableStock(item);
+  const isSoldOut = !canAdd;
 
   return (
     <div className={`group relative flex gap-3 p-3 rounded-xl bg-card border shadow-sm transition-[box-shadow,opacity] duration-200 overflow-hidden ${isSoldOut ? "opacity-60 grayscale" : "hover:shadow-md"}`}>
@@ -37,14 +39,15 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
             Agotado
           </span>
         ) : (
-          <button
+          <Button
+            variant="secondary"
             onClick={() => canAdd && addItem(item)}
             disabled={!canAdd}
             className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-secondary-foreground font-semibold text-sm hover:bg-secondary/80 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="h-4 w-4" />
             {inCart ? inCart.quantity : "Añadir"}
-          </button>
+          </Button>
         )}
       </div>
     </div>

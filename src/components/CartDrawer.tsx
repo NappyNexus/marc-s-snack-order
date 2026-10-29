@@ -7,6 +7,8 @@ import { getWhatsAppNumberFromDb } from "@/hooks/use-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PAYMENT_METHODS } from "@/lib/payment-methods";
 
 interface Props {
   open: boolean;
@@ -17,6 +19,7 @@ interface Props {
 export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
   const { items, updateQuantity, clearCart, completeReservations, totalPrice } = useCart();
   const [customerName, setCustomerName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [sending, setSending] = useState(false);
   const navigate = useNavigate();
 
@@ -24,13 +27,14 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
     if (sending) return;
     await clearCart({ releaseReservations: true });
     setCustomerName("");
+    setPaymentMethod("");
     onClose();
     navigate("/");
     toast.success("Pedido cancelado, los productos volvieron al inventario");
   };
 
   const handleOrder = async () => {
-    if (!customerName.trim() || sending) return;
+    if (!customerName.trim() || !paymentMethod || items.length === 0 || sending) return;
     setSending(true);
     try {
       const phone = await getWhatsAppNumberFromDb();
@@ -50,13 +54,14 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
       }
 
       const orderNumber = inserted?.order_number as number | undefined;
-      const url = buildWhatsAppUrl(phone, customerName.trim(), items, orderNumber);
+      const url = buildWhatsAppUrl(phone, customerName.trim(), items, orderNumber, paymentMethod);
 
       await completeReservations();
       toast.success(`Pedido #${orderNumber} registrado`);
       window.location.href = url;
       await clearCart({ releaseReservations: false });
       setCustomerName("");
+      setPaymentMethod("");
       onClose();
       onOrderPlaced?.();
     } finally {
@@ -124,6 +129,17 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
                 RD${totalPrice.toLocaleString()}
               </span>
             </div>
+            <div className="space-y-2">
+              <label htmlFor="payment-method" className="text-sm font-medium">Método de pago</label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={sending}>
+                <SelectTrigger id="payment-method" className="h-12">
+                  <SelectValue placeholder="Selecciona el método de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map((method) => <SelectItem key={method} value={method}>{method}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <input
               type="text"
               placeholder="Tu nombre completo"
@@ -145,7 +161,7 @@ export function CartDrawer({ open, onClose, onOrderPlaced }: Props) {
                 variant="whatsapp"
                 size="lg"
                 className="flex-1"
-                disabled={!customerName.trim() || sending}
+                disabled={!customerName.trim() || !paymentMethod || sending}
                 onClick={handleOrder}
               >
                 <MessageCircle className="h-5 w-5" />

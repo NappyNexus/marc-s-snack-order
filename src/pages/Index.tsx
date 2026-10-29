@@ -8,7 +8,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { useMenu } from "@/hooks/use-menu";
 
 const Index = () => {
-  const { menu, loading, refetch } = useMenu();
+  const { menu, loading, error, refetch } = useMenu();
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
@@ -17,6 +17,8 @@ const Index = () => {
       <Hero />
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Cargando menú...</div>
+      ) : error ? (
+        <div className="py-12 text-center text-muted-foreground">No se pudo cargar el menú. Intenta de nuevo en unos momentos.</div>
       ) : (
         <MenuSection menu={menu} />
       )}

@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MenuItem } from "@/lib/menu-data";
-import { DEFAULT_MENU } from "@/lib/menu-data";
+import { changedStockIds } from "@/lib/inventory";
 
 export function useMenu() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchMenu = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from("menu_items")
       .select("*")
       .order("sort_order", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      // Fallback to defaults if DB is empty/errored
-      setMenu(DEFAULT_MENU);
+    setError(Boolean(fetchError));
+    if (fetchError || !data) {
+      setMenu([]);
     } else {
       setMenu(
         data.map((row: any) => ({
@@ -50,14 +51,10 @@ export function useMenu() {
     };
   }, [fetchMenu]);
 
-  return { menu, loading, refetch: fetchMenu };
+  return { menu, loading, error, refetch: fetchMenu };
 }
 
-export async function saveMenuToDb(menu: MenuItem[]): Promise<boolean> {
-  // Delete all existing items and re-insert
-  const { error: delError } = await supabase.from("menu_items").delete().neq("id", "");
-  if (delError) return false;
-
+export async function saveMenuToDb(menu: MenuItem[], baseline: MenuItem[]): Promise<boolean> {
   const rows = menu.map((item, idx) => ({
     id: item.id,
     name: item.name,
@@ -68,7 +65,10 @@ export async function saveMenuToDb(menu: MenuItem[]): Promise<boolean> {
     sort_order: idx,
   }));
 
-  const { error } = await supabase.from("menu_items").insert(rows);
+  const { error } = await supabase.rpc("save_menu_inventory", {
+    _menu: rows,
+    _stock_ids: changedStockIds(menu, baseline),
+  });
   return !error;
 }
 

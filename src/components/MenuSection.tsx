@@ -3,6 +3,7 @@ import type { MenuItem } from "@/lib/menu-data";
 import { MenuItemCard } from "./MenuItemCard";
 import { ScrollReveal } from "./ScrollReveal";
 import { Search, X } from "lucide-react";
+import { hasAvailableStock } from "@/lib/inventory";
 
 interface Props {
   menu: MenuItem[];
@@ -11,12 +12,13 @@ interface Props {
 export function MenuSection({ menu }: Props) {
   const [search, setSearch] = useState("");
 
+  const available = menu.filter(hasAvailableStock);
   const filtered = search.trim()
-    ? menu.filter((i) =>
+    ? available.filter((i) =>
         i.name.toLowerCase().includes(search.toLowerCase()) ||
         i.category.toLowerCase().includes(search.toLowerCase())
       )
-    : menu;
+    : available;
 
   const categories = Array.from(new Set(filtered.map((i) => i.category)));
 
@@ -45,8 +47,8 @@ export function MenuSection({ menu }: Props) {
 
         {filtered.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            <p className="font-display text-lg">No se encontraron resultados</p>
-            <p className="text-sm mt-1">Intenta con otro término de búsqueda</p>
+            <p className="font-display text-lg">{search ? "No se encontraron resultados" : "No hay productos disponibles por el momento"}</p>
+            {search && <p className="text-sm mt-1">Intenta con otro término de búsqueda</p>}
           </div>
         )}
 
