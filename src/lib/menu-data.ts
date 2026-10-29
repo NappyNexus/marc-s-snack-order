@@ -10,7 +10,7 @@ export interface MenuItem {
   price: number;
   category: string;
   image?: string;
-  stock?: number; // undefined = unlimited
+   stock?: number; // undefined = unavailable until inventory is configured
 }
 
 export interface CartItem extends MenuItem {
@@ -165,12 +165,14 @@ export function buildWhatsAppUrl(
   phone: string,
   customerName: string,
   items: CartItem[],
-  orderNumber?: number
+  orderNumber?: number,
+  paymentMethod?: string
 ): string {
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   let msg = `🛒 *Pedido de Marc's Snackks*\n\n`;
   if (orderNumber !== undefined) msg += `🔢 *Pedido #${orderNumber}*\n`;
   msg += `👤 *Cliente:* ${customerName}\n\n`;
+  if (paymentMethod) msg += `💳 *Método de pago:* ${paymentMethod}\n\n`;
   msg += `📋 *Detalle del pedido:*\n`;
   msg += `━━━━━━━━━━━━━━━━━━\n`;
   items.forEach((item) => {

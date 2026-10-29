@@ -65,6 +65,8 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem("marcs-admin-auth") === "1");
   const { menu: dbMenu, loading: menuLoading } = useMenu();
   const [menu, setMenu] = useState<MenuItem[]>([]);
+  const menuBaseline = useRef<MenuItem[]>([]);
+  const menuDirty = useRef(false);
   const { banks, setBanks, save: saveBanks } = useBankAccounts();
   const { number: whatsapp, setNumber: setWhatsapp, save: saveWhatsapp } = useWhatsApp();
   const { password: adminPass, setPassword: setAdminPass, save: saveAdminPass } = useAdminPassword();
@@ -75,7 +77,10 @@ export default function AdminPage() {
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!menuLoading) setMenu(dbMenu);
+    if (!menuLoading && !menuDirty.current) {
+      setMenu(dbMenu);
+      menuBaseline.current = dbMenu;
+    }
   }, [dbMenu, menuLoading]);
 
   // Fetch orders when tab switches to orders
@@ -95,6 +100,7 @@ export default function AdminPage() {
   if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
 
   const addItem = () => {
+    menuDirty.current = true;
     const newItem: MenuItem = {
       id: `custom-${Date.now()}`,
       name: "",
@@ -105,10 +111,12 @@ export default function AdminPage() {
   };
 
   const updateItem = (id: string, field: keyof MenuItem, value: string | number | undefined) => {
+    menuDirty.current = true;
     setMenu(menu.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
   const deleteItem = (id: string) => {
+    menuDirty.current = true;
     setMenu(menu.filter((i) => i.id !== id));
   };
 
@@ -143,6 +151,7 @@ export default function AdminPage() {
       .from("product-images")
       .getPublicUrl(filePath);
 
+    menuDirty.current = true;
     setMenu((prev) =>
       prev.map((i) => (i.id === uploadTargetId ? { ...i, image: urlData.publicUrl } : i))
     );
@@ -153,8 +162,12 @@ export default function AdminPage() {
 
   const handleSaveMenu = async () => {
     toast.loading("Guardando menú...", { id: "save-menu" });
-    const ok = await saveMenuToDb(menu);
-    if (ok) toast.success("Menú actualizado", { id: "save-menu" });
+    const ok = await saveMenuToDb(menu, menuBaseline.current);
+    if (ok) {
+      menuDirty.current = false;
+      menuBaseline.current = menu;
+      toast.success("Menú actualizado", { id: "save-menu" });
+    }
     else toast.error("Error al guardar menú", { id: "save-menu" });
   };
 
@@ -281,7 +294,7 @@ export default function AdminPage() {
                                   type="number"
                                   value={item.stock ?? ""}
                                   onChange={(e) => updateItem(item.id, "stock", e.target.value === "" ? undefined : Number(e.target.value))}
-                                  placeholder="∞"
+                                  placeholder="0"
                                   className={`w-14 bg-muted rounded-md px-2 py-1 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-ring tabular-nums ${item.stock !== undefined && item.stock <= 0 ? "text-destructive" : ""}`}
                                   min={0}
                                 />
